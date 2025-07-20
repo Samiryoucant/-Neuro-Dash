@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuroDash - Brain Training Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --primary-glow: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-glow: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --success-glow: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --warning-glow: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .orbitron {
+            font-family: 'Orbitron', monospace;
+        }
+
+        .game-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .game-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(102, 126, 234, 0.3);
+            border-color: rgba(102, 126, 234, 0.5);
+        }
+
+        .game-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .game-card:hover::before {
+            left: 100%;
+        }
+
+        .neural-button {
+            background: var(--primary-glow);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .neural-button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .neural-button:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .progress-ring {
+            transform: rotate(-90deg);
+        }
+
+        .progress-ring__circle {
+            stroke-dasharray: 251.2;
+            stroke-dashoffset: 251.2;
+            transition: stroke-dashoffset 0.35s;
+        }
+
+        .floating-particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(102, 126, 234, 0.6);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0; }
+            50% { transform: translateY(-100px) rotate(180deg); opacity: 1; }
+        }
+
+        .memory-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .memory-card {
+            aspect-ratio: 1;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: transparent;
+            user-select: none;
+        }
+
+        .memory-card.flipped {
+            background: var(--success-glow);
+            color: white;
+            transform: rotateY(180deg);
+        }
+
+        .memory-card.matched {
+            background: var(--warning-glow);
+            animation: pulse 0.6s ease-in-out;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .sequence-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .sequence-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            max-width: 300px;
+        }
+
+        .sequence-button {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.5rem;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sequence-button.green { background: linear-gradient(135deg, #11998e, #38ef7d); }
+        .sequence-button.red { background: linear-gradient(135deg, #eb3349, #f45c43); }
+        .sequence-button.blue { background: linear-gradient(135deg, #667eea, #764ba2); }
+        .sequence-button.yellow { background: linear-gradient(135deg, #f7971e, #ffd200); }
+
+        .sequence-button:active {
+            transform: scale(0.95);
+        }
+
+        .sequence-button.flash {
+            animation: flash 0.3s ease;
+        }
+
+        @keyframes flash {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); box-shadow: 0 0 30px currentColor; }
+            100% { transform: scale(1); }
+        }
+
+        .math-container {
+            text-align: center;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .equation {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: white;
+            margin: 20px 0;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .answer-input {
+            font-size: 1.5rem;
+            padding: 15px;
+            text-align: center;
+            border: 2px solid rgba(102, 126, 234, 0.5);
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-radius: 10px;
+            width: 200px;
+            outline: none;
+        }
+
+        .answer-input:focus {
+            border-color: rgba(102, 126, 234, 1);
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
+        }
+
+        .stats-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 10px;
+            min-width: 120px;
+            text-align: center;
+        }
+
+        .achievement-badge {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--warning-glow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+            margin: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .achievement-badge:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(250, 112, 154, 0.8);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            color: white;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .time-bar {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .time-fill {
+            height: 100%;
+            background: var(--success-glow);
+            transition: width 1s linear;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Background Particles -->
+    <div id="particles-container" class="fixed inset-0 pointer-events-none"></div>
+
+    <!-- Navigation -->
+    <nav class="p-6">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <h1 class="text-3xl font-bold text-white orbitron">
+                <i class="fas fa-brain text-purple-400"></i> NeuroDash
+            </h1>
+            <div class="flex items-center space-x-4">
+                <div class="text-white">
+                    <i class="fas fa-star text-yellow-400"></i>
+                    <span id="total-score" class="ml-2">0</span>
+                </div>
+                <div class="text-white">
+                    <i class="fas fa-trophy text-orange-400"></i>
+                    <span id="current-level" class="ml-2">1</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Dashboard -->
+    <main class="max-w-7xl mx-auto px-6 pb-12">
+        <!-- Stats Overview -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-white mb-6">Your Progress</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="stats-card">
+                    <div class="text-3xl font-bold text-purple-400">85%</div>
+                    <div class="text-sm text-gray-300">Accuracy</div>
+                </div>
+                <div class="stats-card">
+                    <div class="text-3xl font-bold text-green-400">12</div>
+                    <div class="text-sm text-gray-300">Daily Streak</div>
+                </div>
+                <div class="stats-card">
+                    <div class="text-3xl font-bold text-blue-400">3.5h</div>
+                    <div class="text-sm text-gray-300">Total Time</div>
+                </div>
+                <div class="stats-card">
+                    <div class="text-3xl font-bold text-yellow-400">24</div>
+                    <div class="text-sm text-gray-300">Achievements</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Game Selection -->
+        <section>
+            <h2 class="text-2xl font-bold text-white mb-6">Choose Your Challenge</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Memory Game -->
+                <div class="game-card rounded-xl p-6">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-memory text-4xl text-purple-400 mb-3"></i>
+                        <h3 class="text-xl font-bold text-white mb-2">Memory Matrix</h3>
+                        <p class="text-gray-300 text-sm">Test your visual memory with matching pairs</p>
+                    </div>
+                    <div class="mb-4">
+                        <div class="flex justify-between text-sm text-gray-300">
+                            <span>Best Score:</span>
+                            <span class="text-purple-400">42s</span>
+                        </div>
+                        <div class="w-full bg-gray-700 rounded-full h-2 mt-2">
+                            <div class="bg-purple-400 h-2 rounded-full" style="width: 65%"></div>
+                        </div>
+                    </div>
+                    <button onclick="startMemoryGame()" class="w-full neural-button text-white font-semibold py-3 px-4 rounded-lg">
+                        Start Challenge
+                    </button>
+                </div>
+
+                <!-- Sequence Game -->
+                <div class="game-card rounded-xl p-6">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-stream text-4xl text-green-400 mb-3"></i>
+                        <h3 class="text-xl font-bold text-white mb-2">Neural Sequence</h3>
+                        <p class="text-gray-300 text-sm">Follow the pattern to boost your focus</p>
+                    </div>
+                    <div class="mb-4">
+                        <div class="flex justify-between text-sm text-gray-300">
+                            <span>Best Score:</span>
+                            <span class="text-green-400">Level 15</span>
+                        </div>
+                        <div class="w-full bg-gray-700 rounded-full h-2 mt-2">
+                            <div class="bg-green-400 h-2 rounded-full" style="width: 75%"></div>
+                        </div>
+                    </div>
+                    <button onclick="startSequenceGame()" class="w-full neural-button text-white font-semibold py-3 px-4 rounded-lg">
+                        Start Challenge
+                    </button>
+                </div>
+
+                <!-- Math Game -->
+                <div class="game-card rounded-xl p-6">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-calculator text-4xl text-blue-400 mb-3"></i>
+                        <h3 class="text-xl font-bold text-white mb-2">Rapid Calculation</h3>
+                        <p class="text-gray-300 text-sm">Solve equations under pressure</p>
+                    </div>
+                    <div class="mb-4">
+                        <div class="flex justify-between text-sm text-gray-300">
+                            <span>Best Score:</span>
+                            <span class="text-blue-400">98%</span>
+                        </div>
+                        <div class="w-full bg-gray-700 rounded-full h-2 mt-2">
+                            <div class="bg-blue-400 h-2 rounded-full" style="width: 88%"></div>
+                        </div>
+                    </div>
+                    <button onclick="startMathGame()" class="w-full neural-button text-white font-semibold py-3 px-4 rounded-lg">
+                        Start Challenge
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Achievements -->
+        <section class="mt-12">
+            <h2 class="text-2xl font-bold text-white mb-6">Recent Achievements</h2>
+            <div class="flex flex-wrap gap-4">
+                <div class="achievement-badge" title="First Win!">
+                    <i class="fas fa-medal"></i>
+                </div>
+                <div class="achievement-badge" title="Speed Demon">
+                    <i class="fas fa-bolt"></i>
+                </div>
+                <div class="achievement-badge" title="Perfect Score">
+                    <i class="fas fa-star"></i>
+                </div>
+                <div class="achievement-badge" title="Marathon Runner">
+                    <i class="fas fa-trophy"></i>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Game Modals -->
+    <!-- Memory Game Modal -->
+    <div id="memory-modal" class="modal">
+        <div class="modal-content w-full max-w-md">
+            <h3 class="text-2xl font-bold mb-4">Memory Matrix</h3>
+            <div class="mb-4">
+                <div class="flex justify-between items-center">
+                    <span>Moves: <span id="memory-moves">0</span></span>
+                    <span>Time: <span id="memory-time">0</span>s</span>
+                </div>
+                <div class="time-bar">
+                    <div id="memory-time-fill" class="time-fill"></div>
+                </div>
+            </div>
+            <div class="memory-grid mb-4" id="memory-grid"></div>
+            <button onclick="closeMemoryModal()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded">
+                Close
+            </button>
+        </div>
+    </div>
+
+    <!-- Sequence Game Modal -->
+    <div id="sequence-modal" class="modal">
+        <div class="modal-content w-full max-w-md">
+            <h3 class="text-2xl font-bold mb-4">Neural Sequence</h3>
+            <div class="mb-4">
+                <div class="flex justify-between items-center">
+                    <span>Level: <span id="sequence-level">1</span></span>
+                    <span>Score: <span id="sequence-score">0</span></span>
+                </div>
+                <div class="time-bar">
+                    <div id="sequence-time-fill" class="time-fill"></div>
+                </div>
+            </div>
+            <div class="sequence-container">
+                <div class="sequence-grid" id="sequence-grid">
+                    <button class="sequence-button green" data-color="green">G</button>
+                    <button class="sequence-button red" data-color="red">R</button>
+                    <button class="sequence-button blue" data-color="blue">B</button>
+                    <button class="sequence-button yellow" data-color="yellow">Y</button>
+                </div>
+                <button id="sequence-start" onclick="startSequence()" class="neural-button text-white font-semibold py-2 px-6 rounded">
+                    Start Sequence
+                </button>
+            </div>
+            <button onclick="closeSequenceModal()" class="mt-4 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded">
+                Close
+            </button>
+        </div>
+    </div>
+
+    <!-- Math Game Modal -->
+    <div id="math-modal" class="modal">
+        <div class="modal-content w-full max-w-md">
+            <h3 class="text-2xl font-bold mb-4">Rapid Calculation</h3>
+            <div class="mb-4">
+                <div class="flex justify-between items-center">
+                    <span>Score: <span id="math-score">0</span></span>
+                    <span>Streak: <span id="math-streak">0</span></span>
+                </div>
+                <div class="time-bar">
+                    <div id="math-time-fill" class="time-fill"></div>
+                </div>
+            </div>
+            <div class="math-container">
+                <div class="equation" id="math-equation">12 + 8 = ?</div>
+                <input type="number" class="answer-input mb-4" id="math-answer" placeholder="Enter answer" />
+                <button onclick="checkMathAnswer()" class="neural-button text-white font-semibold py-2 px-6 rounded">
+                    Submit
+                </button>
+            </div>
+            <button onclick="closeMathModal()" class="mt-4 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded">
+                Close
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let totalScore = 0;
+        let currentLevel = 1;
+        let memoryInterval;
+        let sequenceInterval;
+        let mathInterval;
+
+        // Create floating particles
+        function createParticles() {
+            const container = document.getElementById('particles-container');
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'floating-particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 6 + 's';
+                particle.style.animationDuration = (Math.random() * 3 + 3) + 's';
+                container.appendChild(particle);
+            }
+        }
+
+        // Memory Game
+        let memoryCards = [];
+        let memoryMoves = 0;
+        let memoryTime = 0;
+        let flippedCards = [];
+        let matchedPairs = 0;
+
+        function startMemoryGame() {
+            document.getElementById('memory-modal').style.display = 'block';
+            initMemoryGame();
+        }
+
+        function closeMemoryModal() {
+            document.getElementById('memory-modal').style.display = 'none';
+            clearInterval(memoryInterval);
+        }
+
+        function initMemoryGame() {
+            memoryCards = ['🧠', '🎯', '⚡', '🌟', '🎪', '🎨', '🚀', '🌈'];
+            memoryCards = [...memoryCards, ...memoryCards];
+            memoryCards = shuffleArray(memoryCards);
+            
+            memoryMoves = 0;
+            memoryTime = 0;
+            flippedCards = [];
+            matchedPairs = 0;
+            
+            updateMemoryDisplay();
+            renderMemoryGrid();
+            
+            memoryInterval = setInterval(() => {
+                memoryTime++;
+                document.getElementById('memory-time').textContent = memoryTime;
+            }, 1000);
+        }
+
+        function renderMemoryGrid() {
+            const grid = document.getElementById('memory-grid');
+            grid.innerHTML = '';
+            
+            memoryCards.forEach((emoji, index) => {
+                const card = document.createElement('div');
+                card.className = 'memory-card';
+                card.dataset.index = index;
+                card.textContent = emoji;
+                card.onclick = () => flipCard(index);
+                grid.appendChild(card);
+            });
+        }
+
+        function flipCard(index) {
+            const card = document.querySelectorAll('.memory-card')[index];
+            if (flippedCards.length >= 2 || card.classList.contains('flipped') || card.classList.contains('matched')) {
+                return;
+            }
+            
+            card.classList.add('flipped');
+            card.style.color = 'white';
+            flippedCards.push(index);
+            
+            if (flippedCards.length === 2) {
+                memoryMoves++;
+                updateMemoryDisplay();
+                
+                setTimeout(() => checkMatch(), 1000);
+            }
+        }
+
+        function checkMatch() {
+            const [first, second] = flippedCards;
+            const card1 = document.querySelectorAll('.memory-card')[first];
+            const card2 = document.querySelectorAll('.memory-card')[second];
+            
+            if (memoryCards[first] === memoryCards[second]) {
+                card1.classList.add('matched');
+                card2.classList.add('matched');
+                matchedPairs++;
+                
+                if (matchedPairs === 8) {
+                    clearInterval(memoryInterval);
+                    totalScore += Math.max(100 - memoryMoves, 10);
+                    updateTotalScore();
+                    alert(`Congratulations! You completed the game in ${memoryTime} seconds!`);
+                }
+            } else {
+                card1.classList.remove('flipped');
+                card2.classList.remove('flipped');
+                card1.style.color = 'transparent';
+                card2.style.color = 'transparent';
+            }
+            
+            flippedCards = [];
+        }
+
+        // Sequence Game
+        let sequence = [];
+        let playerSequence = [];
+        let sequenceLevel = 1;
+        let sequenceScore = 0;
+        let isPlaying = false;
+
+        function startSequenceGame() {
+            document.getElementById('sequence-modal').style.display = 'block';
+            initSequenceGame();
+        }
+
+        function closeSequenceModal() {
+            document.getElementById('sequence-modal').style.display = 'none';
+            clearInterval(sequenceInterval);
+        }
+
+        function initSequenceGame() {
+            sequence = [];
+            playerSequence = [];
+            sequenceLevel = 1;
+            sequenceScore = 0;
+            updateSequenceDisplay();
+        }
+
+        function startSequence() {
+            sequence = [];
+            playerSequence = [];
+            generateSequence();
+            playSequence();
+        }
+
+        function generateSequence() {
+            const colors = ['green', 'red', 'blue', 'yellow'];
+            sequence = [];
+            for (let i = 0; i < sequenceLevel + 2; i++) {
+                sequence.push(colors[Math.floor(Math.random() * 4)]);
+            }
+        }
+
+        function playSequence() {
+            isPlaying = true;
+            const buttons = document.querySelectorAll('.sequence-button');
+            
+            sequence.forEach((color, index) => {
+                setTimeout(() => {
+                    const button = document.querySelector(`[data-color="${color}"]`);
+                    button.classList.add('flash');
+                    setTimeout(() => button.classList.remove('flash'), 300);
+                }, index * 600);
+            });
+            
+            setTimeout(() => {
+                isPlaying = false;
+                enableSequenceButtons();
+            }, sequence.length * 600 + 500);
+        }
+
+        function enableSequenceButtons() {
+            const buttons = document.querySelectorAll('.sequence-button');
+            buttons.forEach(button => {
+                button.onclick = (e) => handleSequenceClick(e.target.dataset.color);
+            });
+        }
+
+        function handleSequenceClick(color) {
+            if (isPlaying) return;
+            
+            playerSequence.push(color);
+            const button = document.querySelector(`[data-color="${color}"]`);
+            button.classList.add('flash');
+            setTimeout(() => button.classList.remove('flash'), 300);
+            
+            if (playerSequence[playerSequence.length - 1] !== sequence[playerSequence.length - 1]) {
+                alert('Game Over! You reached level ' + sequenceLevel);
+                initSequenceGame();
+                return;
+            }
+            
+            if (playerSequence.length === sequence.length) {
+                sequenceScore += sequenceLevel * 10;
+                sequenceLevel++;
+                updateSequenceDisplay();
+                playerSequence = [];
+                setTimeout(() => {
+                    generateSequence();
+                    playSequence();
+                }, 1000);
+            }
+        }
+
+        // Math Game
+        let mathScore = 0;
+        let mathStreak = 0;
+        let currentEquation = {};
+        let timeLimit = 10;
+        let currentTime = 0;
+
+        function startMathGame() {
+            document.getElementById('math-modal').style.display = 'block';
+            initMathGame();
+        }
+
+        function closeMathModal() {
+            document.getElementById('math-modal').style.display = 'none';
+            clearInterval(mathInterval);
+        }
+
+        function initMathGame() {
+            mathScore = 0;
+            mathStreak = 0;
+            generateMathEquation();
+            updateMathDisplay();
+        }
+
+        function generateMathEquation() {
+            const operations = ['+', '-', '*'];
+            const operation = operations[Math.floor(Math.random() * operations.length)];
+            let num1, num2, answer;
+            
+            switch (operation) {
+                case '+':
+                    num1 = Math.floor(Math.random() * 50) + 1;
+                    num2 = Math.floor(Math.random() * 50) + 1;
+                    answer = num1 + num2;
+                    break;
+                case '-':
+                    num1 = Math.floor(Math.random() * 100) + 1;
+                    num2 = Math.floor(Math.random() * num1) + 1;
+                    answer = num1 - num2;
+                    break;
+                case '*':
+                    num1 = Math.floor(Math.random() * 12) + 1;
+                    num2 = Math.floor(Math.random() * 12) + 1;
+                    answer = num1 * num2;
+                    break;
+            }
+            
+            currentEquation = { num1, operation, num2, answer };
+            document.getElementById('math-equation').textContent = `${num1} ${operation} ${num2} = ?`;
+            document.getElementById('math-answer').value = '';
+            document.getElementById('math-answer').focus();
+            
+            currentTime = timeLimit;
+            const timeFill = document.getElementById('math-time-fill');
+            timeFill.style.width = '100%';
+            
+            mathInterval = setInterval(() => {
+                currentTime--;
+                timeFill.style.width = (currentTime / timeLimit * 100) + '%';
+                
+                if (currentTime <= 0) {
+                    clearInterval(mathInterval);
+                    mathStreak = 0;
+                    generateMathEquation();
+                    updateMathDisplay();
+                }
+            }, 1000);
+        }
+
+        function checkMathAnswer() {
+            const userAnswer = parseInt(document.getElementById('math-answer').value);
+            const correctAnswer = currentEquation.answer;
+            
+            clearInterval(mathInterval);
+            
+            if (userAnswer === correctAnswer) {
+                mathScore += 10 + mathStreak * 2;
+                mathStreak++;
+                totalScore += 10;
+                updateTotalScore();
+            } else {
+                mathStreak = 0;
+            }
+            
+            updateMathDisplay();
+            setTimeout(generateMathEquation, 1000);
+        }
+
+        // Utility functions
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function updateMemoryDisplay() {
+            document.getElementById('memory-moves').textContent = memoryMoves;
+        }
+
+        function updateSequenceDisplay() {
+            document.getElementById('sequence-level').textContent = sequenceLevel;
+            document.getElementById('sequence-score').textContent = sequenceScore;
+        }
+
+        function updateMathDisplay() {
+            document.getElementById('math-score').textContent = mathScore;
+            document.getElementById('math-streak').textContent = mathStreak;
+        }
+
+        function updateTotalScore() {
+            document.getElementById('total-score').textContent = totalScore;
+        }
+
+        // Initialize
+        createParticles();
+        
+        // Handle enter key for math game
+        document.getElementById('math-answer').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                checkMathAnswer();
+            }
+        });
+    </script>
+</body>
+</html>
